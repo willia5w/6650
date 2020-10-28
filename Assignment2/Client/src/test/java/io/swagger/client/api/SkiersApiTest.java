@@ -12,18 +12,12 @@
 
 package io.swagger.client.api;
 
-import io.swagger.client.ApiException;
-import io.swagger.client.ApiResponse;
-import io.swagger.client.model.LiftRide;
-import io.swagger.client.model.ResponseMsg;
-import io.swagger.client.model.SkierVertical;
-import org.junit.Test;
-import org.junit.Ignore;
+import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import io.swagger.client.ApiException;
+import io.swagger.client.model.LiftRide;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * API tests for SkiersApi
@@ -43,11 +37,11 @@ public class SkiersApiTest {
      */
     @Test
     public void getSkierDayVerticalTest() throws ApiException {
-        String resortID = null;
-        String resort = null;
-        String dayID = null;
-        String skierID = null;
-        SkierVertical response = api.getSkierDayVertical(resortID, dayID, skierID);
+//        String resortID = null;
+//        String resort = null;
+//        String dayID = null;
+//        String skierID = null;
+//        SkierVertical response = api.getSkierDayVertical(resortID, dayID, skierID);
 
         // TODO: test validations
 //        int code = 0;
@@ -69,9 +63,9 @@ public class SkiersApiTest {
      */
     @Test
     public void getSkierResortTotalsTest() throws ApiException {
-        String skierID = null;
-        List<String> resort = null;
-        SkierVertical response = api.getSkierResortTotals(skierID, resort);
+//        String skierID = null;
+//        List<String> resort = null;
+//        SkierVertical response = api.getSkierResortTotals(skierID, resort);
 
         // TODO: test validations
     }
@@ -85,8 +79,20 @@ public class SkiersApiTest {
      */
     @Test
     public void writeNewLiftRideTest() throws ApiException {
-        LiftRide body = null;
-        api.writeNewLiftRide(body);
+        LiftRide body = new LiftRide();
+        final String resortName = "Mission Ridge";
+        final String skierId = "7889";
+        final String dayId = "23";
+        final String liftId = "21";
+        final String startTime = "217";
+
+        body.setResortID(resortName);
+        body.setDayID(dayId);
+        body.setSkierID(skierId);
+        body.setLiftID(liftId);
+        body.setTime(startTime);
+        
+        assertTrue(api.writeNewLiftRideWithHttpInfo(body).getStatusCode() == 201);
 
         // TODO: test validations
     }

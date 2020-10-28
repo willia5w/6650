@@ -3,10 +3,8 @@ import io.swagger.client.ApiException;
 import io.swagger.client.ApiResponse;
 import io.swagger.client.api.SkiersApi;
 import io.swagger.client.model.LiftRide;
-import io.swagger.client.model.SkierVertical;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,7 +31,6 @@ public class CallThread implements Callable<List<ResponseStat>> {
   private int gets;
   private int skiDay;
   private String resortName;
-  private final Random random = new Random();
 
   public CallThread(CountDownLatch countDown, AtomicInteger successCount,
       AtomicInteger failCount, String urlBase, int minId, int maxId, int startTime,
@@ -62,6 +59,7 @@ public class CallThread implements Callable<List<ResponseStat>> {
     int success = 0;
     int fail = 0;
 
+
     for (int i=0; i<posts; i++) {
       int lift = ThreadLocalRandom.current().nextInt(1, numSkiLifts + 1);
       int time = ThreadLocalRandom.current().nextInt(startTime, endTime + 1);
@@ -77,11 +75,14 @@ public class CallThread implements Callable<List<ResponseStat>> {
       try {
         ApiResponse<Void> resp = apiInstance
             .writeNewLiftRideWithHttpInfo(liftRide);
+
         result.add(new ResponseStat(requestTime, "POST", System.currentTimeMillis() - requestTime,
             resp.getStatusCode()));
+
         success++;
       } catch (ApiException e) {
         fail++;
+//        System.out.println(e.getCode());  // Throwing 500 code
         logger.trace(e);
         e.printStackTrace();
         result.add(
@@ -89,22 +90,22 @@ public class CallThread implements Callable<List<ResponseStat>> {
       }
     }
 
-    for (int j=0; j<gets; j++) {
-      long requestTime = System.currentTimeMillis();
-      try {
-        ApiResponse<SkierVertical> resp = apiInstance.getSkierDayVerticalWithHttpInfo(resortName, String.valueOf(skiDay),
-            String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
-        result.add(new ResponseStat(requestTime, "GET", System.currentTimeMillis() - requestTime,
-            resp.getStatusCode()));
-        success++;
-      } catch (ApiException e) {
-        fail++;
-        logger.trace(e);
-        e.printStackTrace();
-        result.add(
-            new ResponseStat(requestTime, "GET",System.currentTimeMillis() - requestTime, e.getCode()));
-      }
-    }
+//    for (int j=0; j<gets; j++) {
+//      long requestTime = System.currentTimeMillis();
+//      try {
+//        ApiResponse<SkierVertical> resp = apiInstance.getSkierDayVerticalWithHttpInfo(resortName, String.valueOf(skiDay),
+//            String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
+//        result.add(new ResponseStat(requestTime, "GET", System.currentTimeMillis() - requestTime,
+//            resp.getStatusCode()));
+//        success++;
+//      } catch (ApiException e) {
+//        fail++;
+//        logger.trace(e);
+//        e.printStackTrace();
+//        result.add(
+//            new ResponseStat(requestTime, "GET",System.currentTimeMillis() - requestTime, e.getCode()));
+//      }
+//    }
     successCount.addAndGet(success);
     failCount.addAndGet(fail);
     countDown.countDown();

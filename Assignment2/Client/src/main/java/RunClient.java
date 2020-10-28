@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RunClient {
 
+  static final int NUMPOSTS = 100;
+
   public static void main(String[] args) throws InterruptedException, IllegalAccessException, InvalidArgumentException {
 
     Parser parameters = Parser.getArgs(args);
@@ -27,6 +29,7 @@ public class RunClient {
     Integer skiDay = parameters.getSkiDay();
     String resortName = parameters.getResortName();
     String address = parameters.getAddress();
+    System.out.println("URL " + address + "\n");
 
     AtomicInteger succeeded = new AtomicInteger(0);
     AtomicInteger failed = new AtomicInteger(0);
@@ -41,32 +44,29 @@ public class RunClient {
         .newFixedThreadPool(phaseOneThreads + phaseTwoThreads + phaseThreeThreads);
     List<Future<List<ResponseStat>>> response = new ArrayList<>();
 
-    int phaseOneSkierIDRange = numSkiers/phaseOneThreads;
     int phaseOneStart = 1;
     int phaseOneEnd = 90;
-    int phaseOnePosts = 100;
+    int phaseOneSkierIDRange = numSkiers/phaseOneThreads;
     int phaseOneGets = 5;
 
     int phaseTwoStart = 91;
     int phaseTwoEnd = 360;
     int phaseTwoSkierIDRange = numSkiers/phaseTwoThreads;
-    int phaseTwoPosts = 100;
     int phaseTwoGets = 5;
 
     int phaseThreeStart = 361;
     int phaseThreeEnd = 420;
     int phaseThreeSkierIDRange = numSkiers/phaseThreeThreads;
-    int phaseThreePosts = 100;
     int phaseThreeGets = 10;
 
     runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseOneThreads, pool,
-        response, phaseOneSkierIDRange, phaseOneStart, phaseOneEnd, phaseOnePosts, phaseOneGets);
+        response, phaseOneSkierIDRange, phaseOneStart, phaseOneEnd, NUMPOSTS, phaseOneGets);
 
     runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseTwoThreads, pool,
-        response, phaseTwoSkierIDRange, phaseTwoStart, phaseTwoEnd, phaseTwoPosts, phaseTwoGets);
+        response, phaseTwoSkierIDRange, phaseTwoStart, phaseTwoEnd, NUMPOSTS, phaseTwoGets);
 
     runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseThreeThreads, pool,
-        response, phaseThreeSkierIDRange, phaseThreeStart, phaseThreeEnd, phaseThreePosts,
+        response, phaseThreeSkierIDRange, phaseThreeStart, phaseThreeEnd, NUMPOSTS,
         phaseThreeGets);
 
     pool.shutdown();
