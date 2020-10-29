@@ -18,10 +18,15 @@ public class SkierServlet extends HttpServlet {
 
   LiftRidesDao liftRidesDao = new LiftRidesDao();
 
-//  TODO: POSTMAN test http://localhost:8080/Server_war_exploded/skiers/liftrides
-//  http://35.165.105.125:8080/Server_war/skiers/liftrides
-  protected void doPost(HttpServletRequest req, HttpServletResponse res)
-      throws ServletException, IOException {
+//  protected LiftRidesDao liftRidesDao;
+//  public void init() throws ServletException {
+//      liftRidesDao = LiftRidesDao.getInstance();
+//  }
+
+  //  TODO: POSTMAN test http://localhost:8080/Server_war_exploded/skiers/liftrides
+  //  http://35.165.105.125:8080/Server_war/skiers/liftrides
+
+  protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
     String urlPath = req.getPathInfo();
 
     if (urlPath == null || urlPath.isEmpty()) {

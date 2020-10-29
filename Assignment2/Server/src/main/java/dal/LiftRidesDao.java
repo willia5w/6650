@@ -11,21 +11,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 public class LiftRidesDao {
 
-//  protected ConnectionManager connectionManager;
-//  private static LiftRidesDao instance = null;
   private static BasicDataSource dataSource;
-
-
-//  protected LiftRidesDao() {
-//    connectionManager = new ConnectionManager();
-//  }
-
-//  public static LiftRidesDao getInstance() {
-//    if(instance == null) {
-//      instance = new LiftRidesDao();
-//    }
-//    return instance;
-//  }
 
   public LiftRidesDao() {
     dataSource = ConnectionManager.getDataSource();
