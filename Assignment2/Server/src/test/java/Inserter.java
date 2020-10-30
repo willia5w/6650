@@ -37,7 +37,7 @@ public class Inserter {
 		liftRidesDao.insertLiftRide(liftRide);
 		
 		// READ.
-		int resVert = liftRidesDao.getTotalVerticalForResort(skierId, resortName);
+		int resVert = liftRidesDao.getTotalVerticalForResort(Integer.parseInt(skierId), resortName);
 		System.out.format("Resort Vert: " + Integer.toString(resVert) + "\n");
 
 		int dayVert = liftRidesDao.getSkierVerticalForSkiDay(resortName, Integer.parseInt(dayId), Integer.parseInt(skierId));

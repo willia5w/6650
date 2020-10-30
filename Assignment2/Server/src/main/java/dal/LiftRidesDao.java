@@ -2,7 +2,6 @@ package dal;
 
 import connection.ConnectionManager;
 import io.swagger.client.model.LiftRide;
-import io.swagger.client.model.SkierVertical;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,13 +50,13 @@ public class LiftRidesDao {
   }
 
 //   get the total vertical for the skier the specified resort.
-  public int getTotalVerticalForResort (String skierId, String resortName) throws SQLException {
+  public int getTotalVerticalForResort (int skierId, String resortName) throws SQLException {
     int totalVertical = 0;
-    SkierVertical skierVertical = new SkierVertical();
+
     Connection conn = null;
     PreparedStatement selectStmt = null;
     ResultSet results = null;
-    String selectVertical = "SELECT SUM(Vertical) AS TotalVertical " +
+    String selectVertical = "SELECT SUM(Vertical) AS TotalResortVertical " +
         "FROM (SELECT Vertical FROM LiftRides " +
         "WHERE ResortName=? AND SkierId=?) AS ResortVert;";
 
@@ -65,13 +64,12 @@ public class LiftRidesDao {
       conn = dataSource.getConnection();
       selectStmt = conn.prepareStatement(selectVertical);
       selectStmt.setString(1, resortName);
-      selectStmt.setInt(  2, Integer.parseInt(skierId));
+      selectStmt.setInt(  2, skierId);
       results = selectStmt.executeQuery();
-      while(results.next()) {
-        totalVertical = results.getInt("TotalVertical");
+
+      if (results.next()) {
+        totalVertical = results.getInt("TotalResortVertical");
       }
-      skierVertical.setTotalVert(totalVertical);
-      skierVertical.setResortID(resortName);
     } catch (SQLException e) {
       e.printStackTrace();
     } finally {
@@ -106,7 +104,7 @@ public class LiftRidesDao {
       selectStmt.setInt(3, skierId);
       results = selectStmt.executeQuery();
 
-      if(results.next()) {
+      if (results.next()) {
         vertical = results.getInt("TotalVertical");
       }
     } catch (SQLException e) {

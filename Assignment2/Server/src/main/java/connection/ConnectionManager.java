@@ -12,7 +12,7 @@ public class ConnectionManager {
   private static final String hostName = "database-1.cx8vo0f7wekn.us-west-2.rds.amazonaws.com";
   private static final String password = "password";
 
-  ;private static final int port = 3306;
+  private static final int port = 3306;
   private static final String schema = "IkkyoneDB";
   private final String timezone = "UTC";
 
