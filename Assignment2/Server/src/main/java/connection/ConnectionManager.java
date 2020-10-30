@@ -28,8 +28,7 @@ public class ConnectionManager {
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
     }
-//    String JDBC_URL = "jdbc:mysql://" + hostName + ":" + port + "/" + schema + "?useSSL=False";
-//    dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+
     String url = String.format("jdbc:mysql://%s:%s/%s?serverTimezone=UTC", hostName, port, schema);
     dataSource.setUrl(url);
     dataSource.setUsername(user);

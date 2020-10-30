@@ -49,27 +49,25 @@ public class SkierServlet extends HttpServlet {
     String urlPath = req.getPathInfo();
     String[] urlParts = urlPath.split("/");
 
-//    String queryString = req.getQueryString();
-
     if (validateGet(urlPath) == GetCase.RESORT) {
       int skierId = Integer.valueOf(urlParts[1]);
-
-      System.out.println("SkierId:" + skierId);
-
       String queryResort = req.getParameter("resort");
       SkierVertical skierVertical = new SkierVertical();
       skierVertical.setResortID(queryResort);
       try {
         int vert = liftRidesDao.getTotalVerticalForResort(skierId, queryResort);
-        res.setStatus(HttpServletResponse.SC_OK);
-        skierVertical.setTotalVert(vert);
-        System.out.println("Res Vert:" + vert);
+        if (vert > 0) {
+          skierVertical.setTotalVert(vert);
+          res.setStatus(HttpServletResponse.SC_OK);
+          res.getWriter().write(skierVertical.toString());
+        } else {
+          res.setStatus(HttpServletResponse.SC_NO_CONTENT);
+          res.getWriter().write("{\"message\": \"no content\"}");
+        }
       } catch (SQLException e) {
         res.setStatus(HttpServletResponse.SC_NO_CONTENT);
         res.getWriter().write("{\"message\": \"no content\"}");
       }
-      res.getWriter().write(skierVertical.toString());
-
     } else if (validateGet(urlPath) == GetCase.DAY) {
       String resortName = urlParts[1];
       int dayId = Integer.valueOf(urlParts[3]);
@@ -80,11 +78,18 @@ public class SkierServlet extends HttpServlet {
         int vert = liftRidesDao.getSkierVerticalForSkiDay(resortName, dayId, skierId);
         res.setStatus(HttpServletResponse.SC_OK);
         skierVertical.setTotalVert(vert);
+        if (vert > 0) {
+          skierVertical.setTotalVert(vert);
+          res.setStatus(HttpServletResponse.SC_OK);
+          res.getWriter().write(skierVertical.toString());
+        } else {
+          res.setStatus(HttpServletResponse.SC_NO_CONTENT);
+          res.getWriter().write("{\"message\": \"no content\"}");
+        }
       } catch (SQLException e) {
         res.setStatus(HttpServletResponse.SC_NO_CONTENT);
         res.getWriter().write("{\"message\": \"no content\"}");
       }
-      res.getWriter().write(skierVertical.toString());
     } else {  // Invalid Case
       res.setStatus(HttpServletResponse.SC_NOT_FOUND);
       res.getWriter().write("{\"message\": \"not found\"}");
@@ -97,9 +102,7 @@ public class SkierServlet extends HttpServlet {
   }
 
   private GetCase validateGet(String urlPath) {
-
     String[] urlParts = urlPath.split("/");
-
     if (Pattern.matches("/\\w+/vertical", urlPath)) {
       return GetCase.RESORT;
     } else if (urlParts[2].equals("days") && urlParts[4].equals("skiers")) {
