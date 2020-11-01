@@ -36,7 +36,7 @@ public class ConnectionManager {
 //    dataSource.addConnectionProperty("serverTimezone", "UTC");
     dataSource.setInitialSize(10);
     dataSource.setMaxTotal(60);
-    dataSource.setMaxIdle(100);
+    dataSource.setMaxIdle(60);  // Changed from 100
   }
 
 

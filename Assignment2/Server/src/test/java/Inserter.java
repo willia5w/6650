@@ -42,5 +42,6 @@ public class Inserter {
 
 		int dayVert = liftRidesDao.getSkierVerticalForSkiDay(resortName, Integer.parseInt(dayId), Integer.parseInt(skierId));
 		System.out.format("Day Vert: " + Integer.toString(dayVert) + "\n");
+
 	}
 }

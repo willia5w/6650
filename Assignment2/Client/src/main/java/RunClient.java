@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RunClient {
 
-  static final int NUMPOSTS = 100;
+  static final int NUMPOSTS = 1000;
 
   public static void main(String[] args) throws InterruptedException, IllegalAccessException, InvalidArgumentException {
 
@@ -29,7 +29,6 @@ public class RunClient {
     Integer skiDay = parameters.getSkiDay();
     String resortName = parameters.getResortName();
     String address = parameters.getAddress();
-    System.out.println("URL " + address + "\n");
 
     AtomicInteger succeeded = new AtomicInteger(0);
     AtomicInteger failed = new AtomicInteger(0);
@@ -59,15 +58,30 @@ public class RunClient {
     int phaseThreeSkierIDRange = numSkiers/phaseThreeThreads;
     int phaseThreeGets = 10;
 
+    try {
+      System.out.println("Phase 1 Start");
     runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseOneThreads, pool,
         response, phaseOneSkierIDRange, phaseOneStart, phaseOneEnd, NUMPOSTS, phaseOneGets);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
 
+    try {
+      System.out.println("Phase 2 Start");
     runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseTwoThreads, pool,
         response, phaseTwoSkierIDRange, phaseTwoStart, phaseTwoEnd, NUMPOSTS, phaseTwoGets);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
 
+    try {
+      System.out.println("Phase 3 Start");
     runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseThreeThreads, pool,
         response, phaseThreeSkierIDRange, phaseThreeStart, phaseThreeEnd, NUMPOSTS,
         phaseThreeGets);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
 
     pool.shutdown();
 
@@ -81,14 +95,6 @@ public class RunClient {
     long wallTime = endTimer - startTimer;
     long throughput = succeeded.intValue()/wallTime;
 
-    System.out.println(maxThreads + " Threads, " + numSkiers + " Skiers, " + numSkiLifts + " Lifts");
-    System.out.println("*****************");
-    System.out.println("Threads Succeeded: " + succeeded);
-    System.out.println("Threads Failed: " + failed);
-    System.out.println("Wall Time: " + wallTime + " seconds");
-    System.out.println("Throughput: " + throughput + " requests per second");
-    System.out.println("*****************");
-
     try {
       ResponseAnalysis ResponseAnalysis = new ResponseAnalysis(response);
       System.out.println("Mean Response: " + ResponseAnalysis.meanResponse() + " ms");
@@ -100,11 +106,21 @@ public class RunClient {
       e.printStackTrace();
     } catch (InterruptedException e) {
       e.printStackTrace();
+    } catch (IllegalStateException e) {
+      e.printStackTrace();
     }
 
+    System.out.println(maxThreads + " Threads, " + numSkiers + " Skiers, " + numSkiLifts + " Lifts");
+    System.out.println("*****************");
+    System.out.println("Threads Succeeded: " + succeeded);
+    System.out.println("Threads Failed: " + failed);
+    System.out.println("Wall Time: " + wallTime + " seconds");
+    System.out.println("Throughput: " + throughput + " requests per second");
+    System.out.println("*****************");
 
     try {
-      FileWriter fileWriter = new FileWriter(String.valueOf(Paths.get("", "TestOutput-" + maxThreads + "Threads.csv")));
+      FileWriter fileWriter = new FileWriter(String.valueOf(
+          Paths.get("", "TestOutput-" + maxThreads + "Threads.csv")));
       fileWriter.write("\"Start Time\",\"Type\",\"Latency\",\"Code\"\n");
       for (Future<List<ResponseStat>> list : response) {
         for (ResponseStat stat : list.get()) {
@@ -118,23 +134,51 @@ public class RunClient {
       e.printStackTrace();
     } catch (InterruptedException e) {
       e.printStackTrace();
+    } catch (IllegalStateException e) {
+      e.printStackTrace();
     }
   }
 
-  private static void runPhase(Integer numSkiLifts, Integer skiDay, String resortName,
-      String address, AtomicInteger succeeded, AtomicInteger failed, int phaseOneThreads,
-      ExecutorService pool, List<Future<List<ResponseStat>>> response, int phaseOneSkierIDRange,
-      int phaseOneStart, int phaseOneEnd, int phaseOnePosts, int phaseOneGets) {
+  private static void runPhase(
+      Integer numSkiLifts,
+      Integer skiDay,
+      String resortName,
+      String address,
+      AtomicInteger succeeded,
+      AtomicInteger failed,
+      int phaseThreads,
+      ExecutorService pool,
+      List<Future<List<ResponseStat>>> response,
+      int phaseSkierIDRange,
+      int phaseStart,
+      int phaseEnd,
+      int phasePosts,
+      int phaseGets) throws InterruptedException {
+
+    System.out.println("Phase Start " + phaseStart);
+
     try {
-      int phaseOneMin = 1;
-      final CountDownLatch phaseOneLatch = new CountDownLatch((int)Math.ceil(phaseOneThreads/10f));
-      for (int i = 0; i < phaseOneThreads; i++) {
-        Callable<List<ResponseStat>> newPhaseOneThread = new CallThread(phaseOneLatch, succeeded,
-            failed, address, phaseOneMin, phaseOneMin + phaseOneSkierIDRange-1, phaseOneStart,
-            phaseOneEnd, phaseOnePosts, phaseOneGets, numSkiLifts, skiDay, resortName);
-        response.add(pool.submit(newPhaseOneThread));
+      int phaseMin = 1;
+      final CountDownLatch phaseLatch = new CountDownLatch((int)Math.ceil(phaseThreads/10f));
+      for (int i = 0; i < phaseThreads; i++) {
+        Callable<List<ResponseStat>> newPhaseThread = new CallThread(
+            phaseLatch,
+            succeeded,
+            failed,
+            address,
+            phaseMin,
+            phaseMin + phaseSkierIDRange-1,
+            phaseStart,
+            phaseEnd,
+            phasePosts,
+            phaseGets,
+            numSkiLifts,
+            skiDay,
+            resortName);
+        phaseMin+=phaseSkierIDRange;
+        response.add(pool.submit(newPhaseThread));
       }
-      phaseOneLatch.await();
+      phaseLatch.await();
     } catch (InterruptedException e) {
       e.printStackTrace();
     }

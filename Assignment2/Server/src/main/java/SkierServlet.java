@@ -3,6 +3,7 @@ import dal.LiftRidesDao;
 import io.swagger.client.model.LiftRide;
 import io.swagger.client.model.SkierVertical;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
 import javax.servlet.ServletException;
@@ -42,12 +43,13 @@ public class SkierServlet extends HttpServlet {
   }
 
   protected void doGet(HttpServletRequest req, HttpServletResponse res)
-      throws ServletException, IOException {
-
+      throws ServletException, IOException, IllegalArgumentException {
+    PrintWriter writer = res.getWriter();
     res.setContentType("application/json");
     res.setCharacterEncoding("UTF-8");
     String urlPath = req.getPathInfo();
     String[] urlParts = urlPath.split("/");
+
 
     if (validateGet(urlPath) == GetCase.RESORT) {
       int skierId = Integer.valueOf(urlParts[1]);
@@ -59,14 +61,17 @@ public class SkierServlet extends HttpServlet {
         if (vert > 0) {
           skierVertical.setTotalVert(vert);
           res.setStatus(HttpServletResponse.SC_OK);
-          res.getWriter().write(skierVertical.toString());
+          writer.write(skierVertical.toString());
         } else {
           res.setStatus(HttpServletResponse.SC_NO_CONTENT);
-          res.getWriter().write("{\"message\": \"no content\"}");
+          writer.write("{\"message\": \"no content\"}");
         }
       } catch (SQLException e) {
         res.setStatus(HttpServletResponse.SC_NO_CONTENT);
-        res.getWriter().write("{\"message\": \"no content\"}");
+        writer.write("{\"message\": \"no content\"}");
+      } catch (IllegalArgumentException ie) {
+        res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        writer.write("{\"message\": \"illegal argument\"}");
       }
     } else if (validateGet(urlPath) == GetCase.DAY) {
       String resortName = urlParts[1];
@@ -81,18 +86,24 @@ public class SkierServlet extends HttpServlet {
         if (vert > 0) {
           skierVertical.setTotalVert(vert);
           res.setStatus(HttpServletResponse.SC_OK);
-          res.getWriter().write(skierVertical.toString());
+          writer.write(skierVertical.toString());
         } else {
           res.setStatus(HttpServletResponse.SC_NO_CONTENT);
-          res.getWriter().write("{\"message\": \"no content\"}");
+          writer.write("{\"message\": \"no content\"}");
         }
       } catch (SQLException e) {
         res.setStatus(HttpServletResponse.SC_NO_CONTENT);
-        res.getWriter().write("{\"message\": \"no content\"}");
+        writer.write("{\"message\": \"no content\"}");
+      } catch (IllegalArgumentException ie) {
+        res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        writer.write("{\"message\": \"illegal argument\"}");
       }
-    } else {  // Invalid Case
+    } else if (validateGet(urlPath) == GetCase.INVALID) {
+      res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      writer.print("{\"message\": \"invalid request\"}");
+    } else {
       res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-      res.getWriter().write("{\"message\": \"not found\"}");
+      writer.print("{\"message\": \"not found\"}");
     }
   }
 

@@ -12,9 +12,15 @@ public class ResponseAnalysis {
       throws ExecutionException, InterruptedException {
     stats = new ArrayList<>();
     for (Future<List<ResponseStat>> list : input) {
-      for (ResponseStat responseStat : list.get()) {
-        stats.add(responseStat);
+      try{
+        for (ResponseStat responseStat : list.get()) {
+//          System.out.println(responseStat);
+          stats.add(responseStat);
+        }
+      } catch (IllegalStateException e) {
+        System.out.println("eroor here");
       }
+
     }
     Collections.sort(stats);
   }
