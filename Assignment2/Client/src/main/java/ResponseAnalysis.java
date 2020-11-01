@@ -12,18 +12,14 @@ public class ResponseAnalysis {
       throws ExecutionException, InterruptedException {
     stats = new ArrayList<>();
     for (Future<List<ResponseStat>> list : input) {
-      try{
-        for (ResponseStat responseStat : list.get()) {
-//          System.out.println(responseStat);
-          stats.add(responseStat);
-        }
-      } catch (IllegalStateException e) {
-        System.out.println("eroor here");
+      for (ResponseStat responseStat : list.get()) {
+        stats.add(responseStat);
       }
-
     }
     Collections.sort(stats);
   }
+
+
 
   double meanResponse() {
     long sum = 0;
@@ -45,7 +41,7 @@ public class ResponseAnalysis {
   }
   
   long getP99() {
-    return stats.get((int)Math.ceil(stats.size()*0.99)).getLatency();
+    return stats.get((int)Math.ceil(stats.size()*0.99)-1).getLatency();
   }
 
   long getMax() {

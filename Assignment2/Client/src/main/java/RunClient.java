@@ -20,7 +20,8 @@ public class RunClient {
 
   static final int NUMPOSTS = 1000;
 
-  public static void main(String[] args) throws InterruptedException, IllegalAccessException, InvalidArgumentException {
+  public static void main(String[] args)
+      throws InterruptedException, IllegalAccessException, InvalidArgumentException, ExecutionException {
 
     Parser parameters = Parser.getArgs(args);
     Integer maxThreads = parameters.getMaxThreads();
@@ -87,6 +88,7 @@ public class RunClient {
 
     try {
       pool.awaitTermination(MAX_PRIORITY, TimeUnit.HOURS);
+
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -95,20 +97,13 @@ public class RunClient {
     long wallTime = endTimer - startTimer;
     long throughput = succeeded.intValue()/wallTime;
 
-    try {
-      ResponseAnalysis ResponseAnalysis = new ResponseAnalysis(response);
-      System.out.println("Mean Response: " + ResponseAnalysis.meanResponse() + " ms");
-      System.out.println("Median Response: " + ResponseAnalysis.medianResponse() + " ms");
-      System.out.println("Throughput " + (double)ResponseAnalysis.getNum()/(double)wallTime + " requests/second");
-      System.out.println("P99 Response: " + ResponseAnalysis.getP99() + " ms");
-      System.out.println("Max Response: " + ResponseAnalysis.getMax() + " ms");
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (IllegalStateException e) {
-      e.printStackTrace();
-    }
+    ResponseAnalysis responseAnalysis = new ResponseAnalysis(response);
+    System.out.println("Mean Response: " + responseAnalysis.meanResponse() + " ms");
+    System.out.println("Median Response: " + responseAnalysis.medianResponse() + " ms");
+    System.out.println("Throughput " + (double)responseAnalysis.getNum()/(double)wallTime + " requests/second");
+    System.out.println("P99 Response: " + responseAnalysis.getP99() + " ms");
+    System.out.println("Max Response: " + responseAnalysis.getMax() + " ms");
+
 
     System.out.println(maxThreads + " Threads, " + numSkiers + " Skiers, " + numSkiLifts + " Lifts");
     System.out.println("*****************");
@@ -122,8 +117,8 @@ public class RunClient {
       FileWriter fileWriter = new FileWriter(String.valueOf(
           Paths.get("", "TestOutput-" + maxThreads + "Threads.csv")));
       fileWriter.write("\"Start Time\",\"Type\",\"Latency\",\"Code\"\n");
-      for (Future<List<ResponseStat>> list : response) {
-        for (ResponseStat stat : list.get()) {
+      for (Future<List<ResponseStat>> stats : response) {
+        for (ResponseStat stat : stats.get()) {
           fileWriter.write(stat.toString());
         }
       }
@@ -158,16 +153,17 @@ public class RunClient {
     System.out.println("Phase Start " + phaseStart);
 
     try {
-      int phaseMin = 1;
+
       final CountDownLatch phaseLatch = new CountDownLatch((int)Math.ceil(phaseThreads/10f));
       for (int i = 0; i < phaseThreads; i++) {
+        int j = i+1;
         Callable<List<ResponseStat>> newPhaseThread = new CallThread(
             phaseLatch,
             succeeded,
             failed,
             address,
-            phaseMin,
-            phaseMin + phaseSkierIDRange-1,
+            (phaseSkierIDRange*i)+1,
+            phaseSkierIDRange*j,
             phaseStart,
             phaseEnd,
             phasePosts,
@@ -175,7 +171,7 @@ public class RunClient {
             numSkiLifts,
             skiDay,
             resortName);
-        phaseMin+=phaseSkierIDRange;
+
         response.add(pool.submit(newPhaseThread));
       }
       phaseLatch.await();

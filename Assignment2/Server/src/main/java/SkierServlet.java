@@ -50,6 +50,7 @@ public class SkierServlet extends HttpServlet {
     String urlPath = req.getPathInfo();
     String[] urlParts = urlPath.split("/");
 
+    String message = "{\"message\": \"no content\"}";;
 
     if (validateGet(urlPath) == GetCase.RESORT) {
       int skierId = Integer.valueOf(urlParts[1]);
@@ -57,21 +58,18 @@ public class SkierServlet extends HttpServlet {
       SkierVertical skierVertical = new SkierVertical();
       skierVertical.setResortID(queryResort);
       try {
-        int vert = liftRidesDao.getTotalVerticalForResort(skierId, queryResort);
-        if (vert > 0) {
-          skierVertical.setTotalVert(vert);
-          res.setStatus(HttpServletResponse.SC_OK);
-          writer.write(skierVertical.toString());
-        } else {
-          res.setStatus(HttpServletResponse.SC_NO_CONTENT);
-          writer.write("{\"message\": \"no content\"}");
+        skierVertical.setTotalVert(liftRidesDao.getTotalVerticalForResort(skierId, queryResort));
+        res.setStatus(HttpServletResponse.SC_OK);
+        message = skierVertical.toString();
+        if (skierVertical.getTotalVert() == 0) {
+          res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+          message = "{\"message\": \"no content\"}";
         }
       } catch (SQLException e) {
-        res.setStatus(HttpServletResponse.SC_NO_CONTENT);
-        writer.write("{\"message\": \"no content\"}");
+        res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        message = "{\"message\": \"no content\"}";
       } catch (IllegalArgumentException ie) {
         res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        writer.write("{\"message\": \"illegal argument\"}");
       }
     } else if (validateGet(urlPath) == GetCase.DAY) {
       String resortName = urlParts[1];
@@ -80,33 +78,24 @@ public class SkierServlet extends HttpServlet {
       SkierVertical skierVertical = new SkierVertical();
       skierVertical.setResortID(resortName);
       try {
-        int vert = liftRidesDao.getSkierVerticalForSkiDay(resortName, dayId, skierId);
+        skierVertical.setTotalVert(liftRidesDao.getSkierVerticalForSkiDay(resortName, dayId, skierId));
         res.setStatus(HttpServletResponse.SC_OK);
-        skierVertical.setTotalVert(vert);
-        if (vert > 0) {
-          skierVertical.setTotalVert(vert);
-          res.setStatus(HttpServletResponse.SC_OK);
-          writer.write(skierVertical.toString());
-        } else {
-          res.setStatus(HttpServletResponse.SC_NO_CONTENT);
-          writer.write("{\"message\": \"no content\"}");
+        message = skierVertical.toString();
+        message = skierVertical.toString();
+        if (skierVertical.getTotalVert() == 0) {
+          res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+          message = "{\"message\": \"no content\"}";
         }
       } catch (SQLException e) {
-        res.setStatus(HttpServletResponse.SC_NO_CONTENT);
-        writer.write("{\"message\": \"no content\"}");
+        res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       } catch (IllegalArgumentException ie) {
         res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        writer.write("{\"message\": \"illegal argument\"}");
       }
     } else if (validateGet(urlPath) == GetCase.INVALID) {
       res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      writer.print("{\"message\": \"invalid request\"}");
-    } else {
-      res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-      writer.print("{\"message\": \"not found\"}");
     }
+    writer.write(message);
   }
-
 
   enum GetCase {
     RESORT, DAY, INVALID;
@@ -116,7 +105,7 @@ public class SkierServlet extends HttpServlet {
     String[] urlParts = urlPath.split("/");
     if (Pattern.matches("/\\w+/vertical", urlPath)) {
       return GetCase.RESORT;
-    } else if (urlParts[2].equals("days") && urlParts[4].equals("skiers")) {
+    } else if (urlParts.length > 4 && urlParts[2].equals("days") && urlParts[4].equals("skiers")) {
       return GetCase.DAY;
     } else {
       return GetCase.INVALID;

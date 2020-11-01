@@ -13,10 +13,10 @@ public class ResponseStat implements Comparable<ResponseStat>{
   }
 
   @Override
-  public int compareTo(ResponseStat ResponseStat) {
-    if(this.latency-ResponseStat.latency>0)
+  public int compareTo(ResponseStat responseStat) {
+    if(this.latency-responseStat.latency>0)
       return 1;
-    else if(this.latency-ResponseStat.latency==0)
+    else if(this.latency-responseStat.latency==0)
       return  0;
     else
       return -1;
