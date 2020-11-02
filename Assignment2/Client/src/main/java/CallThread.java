@@ -69,10 +69,12 @@ public class CallThread implements Callable<List<ResponseStat>> {
   @Override
   public List<ResponseStat> call() {
     List<ResponseStat> result = new ArrayList<>();
-    int success = 0;
-    int fail = 0;
+
+    List<String> resortList = new ArrayList<>();
+    resortList.add(resortName);
 
     for (int i = 0; i < posts; i++) {
+
       int lift = ThreadLocalRandom.current().nextInt(1, numSkiLifts + 1);
       int time = ThreadLocalRandom.current().nextInt(startTime, endTime + 1);
 
@@ -82,166 +84,114 @@ public class CallThread implements Callable<List<ResponseStat>> {
       liftRide.setSkierID(String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
       liftRide.setTime(Integer.toString(time));
       liftRide.setLiftID(String.valueOf(lift));
-//
+
       long requestTime = System.currentTimeMillis();
-      try {
-        ApiResponse<Void> resp = apiInstance.writeNewLiftRideWithHttpInfo(liftRide);
-        result.add(
-            new ResponseStat(
-                requestTime,
-                "POST",
-                System.currentTimeMillis() - requestTime,
-                resp.getStatusCode()));
-
-        success++;
-      } catch (ApiException e) {
-          e.printStackTrace();
-          fail++;
-          logger.trace(e);
-          e.printStackTrace();
-          result.add(
-              new ResponseStat(
-                  requestTime, "POST", System.currentTimeMillis() - requestTime, e.getCode()));
-      }
-//     --------------------TESTING--------------------------------------------------
-//      ApiResponse<Void> liftResp = null; // response needs to be a JSON like "{\"message\": \"no content\"}"
-//      AtomicInteger liftTries = new AtomicInteger(0);
-//      while (liftResp == null && liftTries.get() <= gets) {
-//        try {
-//          liftResp = apiInstance.writeNewLiftRideWithHttpInfo(liftRide);
-//
-//          result.add(
-//                  new ResponseStat(
-//                      requestTime,
-//                      "POST",
-//                      System.currentTimeMillis() - requestTime,
-//                      liftResp.getStatusCode()));
-//        } catch (ApiException e) {
-//          if (e.getCause() instanceof SocketTimeoutException) {
-//            liftTries.getAndIncrement();
-//            System.out.println("Retrying POST " + liftTries);
-//            try {
-//              Thread.sleep(1000);
-//            } catch (InterruptedException interruptedException) {
-//              interruptedException.printStackTrace();
-//              fail++;
-//              logger.trace(interruptedException);
-//              result.add(
-//              new ResponseStat(
-//                  requestTime, "POST", System.currentTimeMillis() - requestTime, 404));
-//            }
-//          }
-//        }
-//      }
-    }
-//     --------------------TESTING--------------------------------------------------
-
-    for (int j = 0; j < gets; j++) {
-      long requestTime = System.currentTimeMillis();
-      try {
-        ApiResponse<SkierVertical> dayResp =
-            apiInstance.getSkierDayVerticalWithHttpInfo(
-                resortName,
-                String.valueOf(skiDay),
-                String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
-        result.add(
-            new ResponseStat(
-                requestTime,
-                "GET",
-                System.currentTimeMillis() - requestTime,
-                dayResp.getStatusCode()));
-        success++;
-      } catch (ApiException e) {
-        if (e.getCause() instanceof SocketTimeoutException) {
-          result.add(retryDayResponse(requestTime));
-        } else if (e.getCode() == 400) {
-          result.add(
-              new ResponseStat(
-                  requestTime,
-                  "GET",
-                  System.currentTimeMillis() - requestTime,
-                  e.getCode()));
-          success++;
-        } else {
-          System.out.println("Code : "+ e.getCode());
-
-          fail++;
-          logger.trace(e);
-          e.printStackTrace();
-          result.add(
-              new ResponseStat(
-                  requestTime, "GET", System.currentTimeMillis() - requestTime, e.getCode()));
-        }
-      }
-
-// ----------------------------------------------
-
-//    ApiResponse<SkierVertical> resortResp = null; // response needs to be a JSON like "{\"message\": \"no content\"}"
-//    List<String> resortList = new ArrayList<>();
-//    resortList.add(resortName);
-//    AtomicInteger tries = new AtomicInteger(0);
-//    while (resortResp == null && tries.get() <= gets) {
-//      try {
-//        resortResp =
-//                apiInstance.getSkierResortTotalsWithHttpInfo(
-//                    String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)),
-//                    resortList);
-//      } catch (ApiException e) {
-//        if (e.getCause() instanceof SocketTimeoutException) {
-//          tries.getAndIncrement();
-//          try {
-//            Thread.sleep(5000);
-//          } catch (InterruptedException interruptedException) {
-//            interruptedException.printStackTrace();
-//          }
-//        }
-//      }
+      result.add(tryPost(liftRide, requestTime));
     }
 
+//    for (int j = 0; j < gets; j++) {
+//      long requestTime = System.currentTimeMillis();
+//      result.add(tryDayResponse(requestTime));
+//      result.add(tryResortResponse(resortList, requestTime));
+//    }
 
-    successCount.addAndGet(success);
-    failCount.addAndGet(fail);
     countDown.countDown();
     return result;
   }
 
-  private ResponseStat retryDayResponse(long requestTime) {
-    ApiResponse<SkierVertical> dayResp = null; // response needs to be a JSON like "{\"message\": \"no content\"}"
-    AtomicInteger dayTries = new AtomicInteger(0);
-    while (dayResp == null && dayTries.get() <= 5) {
-      try {
-        dayResp =
-            apiInstance.getSkierDayVerticalWithHttpInfo(
-                resortName,
-                String.valueOf(skiDay),
-                String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
 
-           return new ResponseStat(
+  private ResponseStat tryPost(LiftRide liftRide, long requestTime) {
+    ResponseStat returnRes = null;
+    try {
+      ApiResponse<Void> postResp = apiInstance.writeNewLiftRideWithHttpInfo(liftRide);
+      successCount.incrementAndGet();
+      returnRes = new ResponseStat(
+          requestTime, "POST", System.currentTimeMillis() - requestTime, postResp.getStatusCode());
+    } catch (ApiException e) {
+//        e.printStackTrace();
+        failCount.incrementAndGet();
+        logger.trace(e);
+        returnRes = new ResponseStat(
+            requestTime,
+            "GET",
+            System.currentTimeMillis() - requestTime,
+            404);
+    }
+    return returnRes;
+  }
+
+
+  private ResponseStat tryDayResponse(long requestTime) {
+    ResponseStat returnRes = null;
+    try {
+      ApiResponse<SkierVertical> dayResp =
+          apiInstance.getSkierDayVerticalWithHttpInfo(
+              resortName,
+              String.valueOf(skiDay),
+              String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
+      successCount.incrementAndGet();
+      returnRes = new ResponseStat(
+          requestTime,
+          "GET",
+          System.currentTimeMillis() - requestTime,
+          dayResp.getStatusCode());
+    } catch (ApiException e) {
+      if (e.getCode() == 400) {
+        successCount.incrementAndGet();
+        returnRes =
+            new ResponseStat(
                 requestTime,
                 "GET",
                 System.currentTimeMillis() - requestTime,
-               dayResp.getStatusCode());
-      } catch (ApiException e) {
-        if (e.getCause() instanceof SocketTimeoutException) {
-          System.out.println("SLEEEEPING");
-          dayTries.getAndIncrement();
-          try {
-            Thread.sleep(3000);
-          } catch (InterruptedException ei) {
-            ei.printStackTrace();
-            failCount.incrementAndGet();
-            logger.trace(ei);
-            return new ResponseStat(
-                    requestTime, "GET", System.currentTimeMillis() - requestTime, e.getCode());
-          }
-        } else if (e.getCode() == 400) {
-          successCount.incrementAndGet();
-          return new ResponseStat(
-              requestTime, "GET", System.currentTimeMillis() - requestTime, 400);
-        }
+                400);
+      } else if (e.getCause() instanceof SocketTimeoutException) {
+        e.printStackTrace();
+        failCount.incrementAndGet();
+        logger.trace(e);
+        returnRes = new ResponseStat(
+            requestTime,
+            "GET",
+            System.currentTimeMillis() - requestTime,
+            404);
+
       }
     }
-    return new ResponseStat(
-        requestTime, "GET", System.currentTimeMillis() - requestTime, 404);
+    return returnRes;
+  }
+
+
+  private ResponseStat tryResortResponse(List<String> resortList, long requestTime) {
+    ResponseStat returnRes = null;
+    try {
+      ApiResponse<SkierVertical>  resortResp =
+          apiInstance.getSkierResortTotalsWithHttpInfo(
+              String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)), resortList);
+      successCount.incrementAndGet();
+      returnRes = new ResponseStat(
+          requestTime,
+          "GET",
+          System.currentTimeMillis() - requestTime,
+          resortResp.getStatusCode());
+    } catch (ApiException e) {
+      if (e.getCode() == 400) {
+        successCount.incrementAndGet();
+        returnRes =
+            new ResponseStat(
+                requestTime,
+                "GET",
+                System.currentTimeMillis() - requestTime,
+                400);
+      } else {
+        e.printStackTrace();
+        failCount.incrementAndGet();
+        logger.trace(e);
+        returnRes = new ResponseStat(
+            requestTime,
+            "GET",
+            System.currentTimeMillis() - requestTime,
+            404);
+      }
+    }
+    return returnRes;
   }
 }
