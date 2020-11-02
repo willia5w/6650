@@ -22,18 +22,10 @@ public class ResponseStat implements Comparable<ResponseStat>{
       return -1;
   }
 
-  public long getStartTime() {
-    return startTime;
-  }
-
   public String getType() { return  type; }
 
   public long getLatency() {
     return latency;
-  }
-
-  public int getResponseCode() {
-    return responseCode;
   }
 
   @Override

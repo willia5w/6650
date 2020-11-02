@@ -6,6 +6,7 @@ import io.swagger.client.model.LiftRide;
 import io.swagger.client.model.SkierVertical;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -16,6 +17,7 @@ import org.apache.logging.log4j.core.Logger;
 
 public class CallThread implements Callable<List<ResponseStat>> {
 
+  private static final int SC_BAD_REQUEST = 400;
   private final Logger logger = (Logger) LogManager.getLogger(CallThread.class);
 
   private static CountDownLatch countDown;
@@ -70,29 +72,19 @@ public class CallThread implements Callable<List<ResponseStat>> {
   public List<ResponseStat> call() {
     List<ResponseStat> result = new ArrayList<>();
 
-    List<String> resortList = new ArrayList<>();
-    resortList.add(resortName);
-
     for (int i = 0; i < posts; i++) {
-
-      int lift = ThreadLocalRandom.current().nextInt(1, numSkiLifts + 1);
-      int time = ThreadLocalRandom.current().nextInt(startTime, endTime + 1);
-
-      LiftRide liftRide = new LiftRide();
+      LiftRide liftRide = new LiftRide();  // Too expensive to make here?
       liftRide.setResortID(resortName);
       liftRide.setDayID(Integer.toString(skiDay));
       liftRide.setSkierID(String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
-      liftRide.setTime(Integer.toString(time));
-      liftRide.setLiftID(String.valueOf(lift));
-
-      long requestTime = System.currentTimeMillis();
-      result.add(tryPost(liftRide, requestTime));
+      liftRide.setTime(Integer.toString(ThreadLocalRandom.current().nextInt(startTime, endTime + 1)));
+      liftRide.setLiftID(String.valueOf(ThreadLocalRandom.current().nextInt(1, numSkiLifts + 1)));
+      result.add(tryPost(liftRide));
     }
 
 //    for (int j = 0; j < gets; j++) {
-//      long requestTime = System.currentTimeMillis();
-//      result.add(tryDayResponse(requestTime));
-//      result.add(tryResortResponse(resortList, requestTime));
+//      result.add(tryDayResponse());
+//      result.add(tryResortResponse());
 //    }
 
     countDown.countDown();
@@ -100,72 +92,101 @@ public class CallThread implements Callable<List<ResponseStat>> {
   }
 
 
-  private ResponseStat tryPost(LiftRide liftRide, long requestTime) {
+  private ResponseStat tryPost(LiftRide liftRide) {
     ResponseStat returnRes = null;
-    try {
-      ApiResponse<Void> postResp = apiInstance.writeNewLiftRideWithHttpInfo(liftRide);
-      successCount.incrementAndGet();
-      returnRes = new ResponseStat(
-          requestTime, "POST", System.currentTimeMillis() - requestTime, postResp.getStatusCode());
-    } catch (ApiException e) {
-//        e.printStackTrace();
-        failCount.incrementAndGet();
-        logger.trace(e);
-        returnRes = new ResponseStat(
-            requestTime,
-            "GET",
-            System.currentTimeMillis() - requestTime,
-            404);
-    }
-    return returnRes;
-  }
-
-
-  private ResponseStat tryDayResponse(long requestTime) {
-    ResponseStat returnRes = null;
-    try {
-      ApiResponse<SkierVertical> dayResp =
-          apiInstance.getSkierDayVerticalWithHttpInfo(
-              resortName,
-              String.valueOf(skiDay),
-              String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
-      successCount.incrementAndGet();
-      returnRes = new ResponseStat(
-          requestTime,
-          "GET",
-          System.currentTimeMillis() - requestTime,
-          dayResp.getStatusCode());
-    } catch (ApiException e) {
-      if (e.getCode() == 400) {
+    AtomicInteger attempts = new AtomicInteger();
+    long requestTime = System.currentTimeMillis();
+    while (returnRes == null && attempts.get()<=5) {
+      try {
+        ApiResponse<Void> postResp = apiInstance.writeNewLiftRideWithHttpInfo(liftRide);
         successCount.incrementAndGet();
-        returnRes =
-            new ResponseStat(
-                requestTime,
-                "GET",
-                System.currentTimeMillis() - requestTime,
-                400);
-      } else if (e.getCause() instanceof SocketTimeoutException) {
-        e.printStackTrace();
-        failCount.incrementAndGet();
-        logger.trace(e);
         returnRes = new ResponseStat(
-            requestTime,
-            "GET",
-            System.currentTimeMillis() - requestTime,
-            404);
-
+            requestTime, "POST", System.currentTimeMillis() - requestTime, postResp.getStatusCode());
+      } catch (ApiException e) {
+        if (e.getCause() instanceof SocketTimeoutException) {
+          try{
+            Thread.sleep(2000 * attempts.getAndIncrement());  // MAX = 10,0000ms
+          } catch (InterruptedException i) {
+            i.printStackTrace();
+          }
+        } else {
+          e.printStackTrace();
+          failCount.incrementAndGet();
+          logger.trace(e);
+          returnRes = new ResponseStat(
+              requestTime,
+              "POST",
+              System.currentTimeMillis() - requestTime,
+              404);
+        }
       }
     }
     return returnRes;
   }
 
 
-  private ResponseStat tryResortResponse(List<String> resortList, long requestTime) {
+  private ResponseStat tryDayResponse() {
     ResponseStat returnRes = null;
-    try {
-      ApiResponse<SkierVertical>  resortResp =
+    AtomicInteger attempts = new AtomicInteger();
+    long requestTime = System.currentTimeMillis();
+    while (returnRes == null && attempts.get()<=5) {
+      try {
+        ApiResponse<SkierVertical> dayResp =
+            apiInstance.getSkierDayVerticalWithHttpInfo(
+                resortName,
+                String.valueOf(skiDay),
+                String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)));
+        successCount.incrementAndGet();
+        returnRes = new ResponseStat(
+            requestTime,
+            "GET",
+            System.currentTimeMillis() - requestTime,
+            dayResp.getStatusCode());
+      } catch (ApiException e) {
+        if (e.getCause() instanceof SocketTimeoutException) {
+          try{
+            Thread.sleep(2000 * attempts.getAndIncrement());  // MAX = 10,0000ms
+            System.out.println(attempts.get());
+          } catch (InterruptedException i) {
+            returnRes = new ResponseStat(
+                requestTime,
+                "GET",
+                System.currentTimeMillis() - requestTime,
+                404);
+          }
+        } else if (e.getCode() == SC_BAD_REQUEST) {
+          successCount.incrementAndGet();
+          returnRes = new ResponseStat(
+              requestTime,
+              "GET",
+              System.currentTimeMillis() - requestTime,
+              SC_BAD_REQUEST);
+        } else {
+          e.printStackTrace();
+          failCount.incrementAndGet();
+          logger.trace(e);
+          returnRes = new ResponseStat(
+              requestTime,
+              "GET",
+              System.currentTimeMillis() - requestTime,
+              404);
+        }
+      }
+    }
+    return returnRes;
+  }
+
+
+  private ResponseStat tryResortResponse() {
+    ResponseStat returnRes = null;
+    AtomicInteger attempts = new AtomicInteger();
+    long requestTime = System.currentTimeMillis();
+    while (returnRes == null && attempts.get()<=5) {
+      try {
+      ApiResponse<SkierVertical> resortResp =
           apiInstance.getSkierResortTotalsWithHttpInfo(
-              String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)), resortList);
+              String.valueOf(ThreadLocalRandom.current().nextInt(minId, maxId + 1)),
+              Collections.singletonList(resortName));
       successCount.incrementAndGet();
       returnRes = new ResponseStat(
           requestTime,
@@ -173,14 +194,24 @@ public class CallThread implements Callable<List<ResponseStat>> {
           System.currentTimeMillis() - requestTime,
           resortResp.getStatusCode());
     } catch (ApiException e) {
-      if (e.getCode() == 400) {
+      if (e.getCause() instanceof SocketTimeoutException) {
+        try{
+          Thread.sleep(2000 * attempts.getAndIncrement());  // MAX = 10,0000ms
+          System.out.println(attempts.get());
+        } catch (InterruptedException i) {
+          returnRes = new ResponseStat(
+              requestTime,
+              "GET",
+              System.currentTimeMillis() - requestTime,
+              404);
+        }
+      } else if (e.getCode() == SC_BAD_REQUEST) {
         successCount.incrementAndGet();
-        returnRes =
-            new ResponseStat(
-                requestTime,
-                "GET",
-                System.currentTimeMillis() - requestTime,
-                400);
+        returnRes = new ResponseStat(
+            requestTime,
+            "GET",
+            System.currentTimeMillis() - requestTime,
+            SC_BAD_REQUEST);
       } else {
         e.printStackTrace();
         failCount.incrementAndGet();
@@ -192,6 +223,7 @@ public class CallThread implements Callable<List<ResponseStat>> {
             404);
       }
     }
-    return returnRes;
   }
+  return returnRes;
+}
 }

@@ -109,6 +109,7 @@ public class RunClient implements Runnable {
 
 
     try {
+      System.out.println("Phase 1");
       runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseOneThreads, pool,
           response, phaseOneSkierIDRange, phaseOneStart, phaseOneEnd, POSTS, phaseOneGets);
     } catch (InterruptedException e) {
@@ -117,6 +118,7 @@ public class RunClient implements Runnable {
 
 
     try {
+      System.out.println("Phase 2");
       runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseTwoThreads, pool,
           response, phaseTwoSkierIDRange, phaseTwoStart, phaseTwoEnd, POSTS, phaseTwoGets);
     } catch (InterruptedException e) {
@@ -125,6 +127,7 @@ public class RunClient implements Runnable {
 
 
     try {
+      System.out.println("Phase 3");
       runPhase(numSkiLifts, skiDay, resortName, address, succeeded, failed, phaseThreeThreads, pool,
           response, phaseThreeSkierIDRange, phaseThreeStart, phaseThreeEnd, POSTS,
           phaseThreeGets);
@@ -144,9 +147,7 @@ public class RunClient implements Runnable {
     long wallTime = endTimer - startTimer;
     long throughput = succeeded.intValue()/wallTime;
 
-
-    System.out.println("Config: " + maxThreads + " Threads, " + numSkiers + " Skiers, " + numSkiLifts + " Lifts");
-
+    System.out.println("\nConfig: " + maxThreads + " Threads, " + numSkiers + " Skiers, " + numSkiLifts + " Lifts");
     System.out.println("Threads Succeeded: " + succeeded);
     System.out.println("Threads Failed: " + failed);
     System.out.println("Wall Time: " + wallTime + " seconds");
@@ -175,26 +176,6 @@ public class RunClient implements Runnable {
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-//    -----------------------------------Callable Statistics
-//    ExecutorService resultPool = Executors
-//        .newFixedThreadPool(1);
-//    try {
-//      final CountDownLatch statLatch = new CountDownLatch(1);
-//      Callable<List<ResponseStat>> respStats = new ResponseAnalysis(response, wallTime, maxThreads, statLatch);
-//      resultPool.submit(respStats);
-//      statLatch.await();
-//    } catch (InterruptedException e) {
-//      e.printStackTrace();
-//    }
-//
-//    resultPool.shutdown();
-//    try {
-//      resultPool.awaitTermination(MAX_PRIORITY, TimeUnit.HOURS);
-//
-//    } catch (InterruptedException e) {
-//      e.printStackTrace();
-//    }
-
   }
 }
 
