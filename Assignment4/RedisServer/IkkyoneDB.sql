@@ -1,0 +1,22 @@
+CREATE SCHEMA IF NOT EXISTS IkkyoneDB;
+USE IkkyoneDB;
+
+DROP TABLE IF EXISTS Resorts;
+DROP TABLE IF EXISTS LiftRides;
+
+CREATE TABLE Resorts (
+ResortId	INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ResortName VARCHAR(20) NOT NULL,
+CONSTRAINT pk_Resorts_ResortId
+    PRIMARY KEY (ResortId)
+);
+
+CREATE TABLE LiftRides (
+ResortName    VARCHAR(20) NOT NULL,
+DayId INT NOT NULL,
+SkierId INT NOT NULL,
+StartTime INT NOT NULL,
+LiftId INT NOT NULL,
+Vertical INT NOT NULL,
+    PRIMARY KEY (ResortName, DayId, SkierId, StartTime)
+);
